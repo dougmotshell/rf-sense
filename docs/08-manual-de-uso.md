@@ -198,7 +198,7 @@ traz a extensão em X, o tamanho da célula e o valor máximo em dB/m.
 
 | Arquivo | Conteúdo |
 |---|---|
-| `mapa.pgm` | imagem em tons de cinza, abre em qualquer visualizador ou GIMP |
+| `mapa.pgm` | imagem em tons de cinza, abre em qualquer visualizador ou GIMP. Cada célula vira um bloco de pixels (`--pgm-escala`, automático por padrão) — ampliação, não resolução extra |
 | `mapa.csv` | a matriz de densidade, `ny` linhas × `nx` colunas, em dB/m |
 | `aps.json` | posição estimada, `a_ref` e `rmse` de cada AP |
 

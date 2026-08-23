@@ -178,6 +178,9 @@ def resolver(M, b, nx, ny, lam=0.05, mu=0.5, iters=400, lr=None):
 
 RAMPA = " .:-=+*#%@"
 
+# Lado maior desejado, em pixels, do mapa.pgm quando --pgm-escala é automático.
+LADO_PGM_PADRAO = 600
+
 
 def render_ascii(mapa, nx, ny, origem, passo):
     vmax = float(mapa.max())
@@ -197,13 +200,29 @@ def render_ascii(mapa, nx, ny, origem, passo):
     return "\n".join(linhas)
 
 
-def salvar_pgm(mapa, nx, ny, caminho):
+def salvar_pgm(mapa, nx, ny, caminho, escala=None):
+    """Grava o mapa como PGM, uma célula da grade por bloco de escala x escala pixels.
+
+    A grade tem poucas dezenas de células de lado; gravada 1 pixel por célula, a
+    imagem sai com ~16x12 px e nenhum visualizador a mostra de forma legível. A
+    ampliação é nearest-neighbor: não inventa resolução, só torna visível a que já
+    existe — a resolução física continua sendo o --grid.
+
+    escala=None escolhe o fator que deixa o lado maior perto de LADO_PGM_PADRAO.
+    Devolve a escala usada.
+    """
+    if escala is None:
+        escala = max(1, round(LADO_PGM_PADRAO / max(nx, ny)))
+    escala = max(1, int(escala))
     vmax = float(mapa.max()) or 1.0
     g = (mapa.reshape(ny, nx) / vmax * 255).astype(np.uint8)
     g = np.flipud(g)   # PGM desenha de cima para baixo
+    if escala > 1:
+        g = np.repeat(np.repeat(g, escala, axis=0), escala, axis=1)
     with open(caminho, "wb") as f:
-        f.write(f"P5\n{nx} {ny}\n255\n".encode())
+        f.write(f"P5\n{g.shape[1]} {g.shape[0]}\n255\n".encode())
         f.write(g.tobytes())
+    return escala
 
 
 # -------------------------------------------------------------------------------- main
@@ -224,6 +243,9 @@ def main():
     p.add_argument("--lam", type=float, default=0.05, help="regularização Tikhonov")
     p.add_argument("--mu", type=float, default=0.5, help="peso da suavidade")
     p.add_argument("--out", default="data/processed", help="diretório de saída")
+    p.add_argument("--pgm-escala", type=int, default=0,
+                   help="pixels por célula da grade no mapa.pgm "
+                        "(0 = automático, ~{} px no lado maior)".format(LADO_PGM_PADRAO))
     a = p.parse_args()
 
     medidas = carregar(a.survey)
@@ -322,7 +344,7 @@ def main():
 
     destino = Path(a.out)
     destino.mkdir(parents=True, exist_ok=True)
-    salvar_pgm(mapa, nx, ny, destino / "mapa.pgm")
+    escala_pgm = salvar_pgm(mapa, nx, ny, destino / "mapa.pgm", a.pgm_escala or None)
     np.savetxt(destino / "mapa.csv", mapa.reshape(ny, nx), delimiter=",", fmt="%.4f")
 
     # Georreferência: sem isto o mapa.csv é uma matriz sem posição no mundo,
@@ -335,6 +357,7 @@ def main():
             "n_percurso": float(a.n_percurso), "n_referencia": float(a.n_referencia),
             "lam": float(a.lam), "mu": float(a.mu),
             "n_raios": int(len(b)), "n_aps": len(aps),
+            "pgm_escala": int(escala_pgm),
             "residuo_relativo": float(residuo),
         }, f, indent=2)
     with open(destino / "aps.json", "w") as f:
@@ -343,6 +366,8 @@ def main():
                    for k, v in aps.items()}, f, indent=2)
 
     print(f"\nSalvo em {destino}/ : mapa.pgm, mapa.csv, mapa_meta.json, aps.json")
+    print(f"mapa.pgm: {nx*escala_pgm} x {ny*escala_pgm} px "
+          f"({escala_pgm} px por célula de {passo} m)")
     print("\nCompare com a planta da fase 0. Espere manchas na posição das paredes,")
     print("não bordas nítidas — a resolução do Wi-Fi não permite mais que isso.")
 

@@ -74,9 +74,16 @@ mapa = np.loadtxt("data/processed/mapa.csv", delimiter=",")   # shape (ny, nx)
 
 ## `data/processed/mapa.pgm` — imagem
 
-PGM binário (P5), 8 bits, `nx × ny`. Densidade normalizada para 0–255 pelo máximo do mapa —
+PGM binário (P5), 8 bits. Densidade normalizada para 0–255 pelo máximo do mapa —
 portanto **as intensidades não são comparáveis entre execuções diferentes**. Para comparar
 mapas quantitativamente, use o CSV.
+
+Cada célula da grade vira um bloco de `pgm_escala × pgm_escala` pixels, logo a imagem tem
+`nx·pgm_escala × ny·pgm_escala`. A ampliação é nearest-neighbor e **não acrescenta
+resolução**: a resolução física continua sendo `--grid`. Sem ela a imagem sairia com dezenas
+de pixels de lado e nenhum visualizador a mostraria de forma legível. O fator é automático
+(lado maior ≈ 600 px) e pode ser fixado com `--pgm-escala N`; `--pgm-escala 1` reproduz o
+formato antigo, um pixel por célula.
 
 Já vem invertido verticalmente para leitura natural. Abre em GIMP, ImageMagick, `feh`, etc.
 
@@ -92,7 +99,7 @@ Sem este arquivo, `mapa.csv` é uma matriz sem posição no mundo. É o que perm
   "origem_x": 0.0, "origem_y": 0.0, "grid": 0.5, "nx": 16, "ny": 12,
   "unidade_valores": "dB/m",
   "n_percurso": 2.6, "n_referencia": 2.6, "lam": 0.05, "mu": 0.5,
-  "n_raios": 383, "n_aps": 8, "residuo_relativo": 0.493
+  "n_raios": 383, "n_aps": 8, "pgm_escala": 38, "residuo_relativo": 0.493
 }
 ```
 
