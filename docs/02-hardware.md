@@ -1,6 +1,6 @@
 # 02 — Hardware disponível
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b> · Levantado em 2026-08-23</sub>
+<sub>Levantado em 2026-08-23</sub>
 
 ---
 

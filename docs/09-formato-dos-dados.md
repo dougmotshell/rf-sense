@@ -1,7 +1,5 @@
 # 09 — Formato dos dados
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 ## `data/raw/*.jsonl` — survey (entrada)

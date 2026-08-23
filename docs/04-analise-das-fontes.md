@@ -1,7 +1,5 @@
 # 04 — Análise crítica das fontes
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 Fontes trazidas para o projeto, avaliadas contra a pergunta real: **isso reconstrói a geometria

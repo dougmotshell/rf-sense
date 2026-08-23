@@ -1,7 +1,5 @@
 # 07 — Teoria: tomografia RF por atenuação
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 O coração matemático do projeto. Explica exatamente o que `src/reconstruct.py` calcula,

@@ -1,6 +1,6 @@
 # 06 — Referências
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b> · Consultadas em 2026-08-23</sub>
+<sub>Consultadas em 2026-08-23</sub>
 
 ---
 

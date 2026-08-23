@@ -1,6 +1,6 @@
 # 13 — Avaliação: como saber se o mapa está certo
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b> · Baseline medido em 2026-08-23</sub>
+<sub>Baseline medido em 2026-08-23</sub>
 
 ---
 

@@ -7,11 +7,9 @@
 ---
 
 <sub>
-<b>intelie</b> · Documento gerado com apoio de IA<br/>
-<b>Classificação ISO 27001:</b> PÚBLICO — projeto pessoal de estudo, sem dados corporativos.<br/>
-<i>Ao compartilhar este material ou os dados coletados, respeite as regras da empresa e a
-privacidade de vizinhos e conviventes (MACs e SSIDs são dados pessoais — ver
-<a href="docs/05-etica-e-privacidade.md">docs/05</a>).</i>
+<i>Este projeto mede o rádio do ambiente, o que inevitavelmente capta sinais de terceiros.
+Endereços MAC e SSIDs são dados pessoais: as medições brutas não são versionadas e não devem
+ser publicadas — ver <a href="docs/05-etica-e-privacidade.md">docs/05</a>.</i>
 </sub>
 
 ---

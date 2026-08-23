@@ -1,7 +1,5 @@
 # 00 — Índice da documentação
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b> · Projeto pessoal de estudo</sub>
-
 ---
 
 **rf-sense** — usar Wi-Fi e Bluetooth para reconstruir a geometria de um ambiente interno,

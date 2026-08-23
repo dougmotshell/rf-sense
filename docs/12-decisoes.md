@@ -1,7 +1,5 @@
 # 12 — Decisões de projeto
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 Registro das decisões estruturais e do porquê. Serve para não refazer a mesma discussão daqui

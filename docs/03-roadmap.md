@@ -1,7 +1,5 @@
 # 03 — Roadmap
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 **Objetivo final:** um mapa 2D da sua casa — paredes e espaço livre — reconstruído a partir de

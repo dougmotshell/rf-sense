@@ -1,6 +1,6 @@
 # 10 — Validação sintética
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b> · Executado em 2026-08-23</sub>
+<sub>Executado em 2026-08-23</sub>
 
 ---
 

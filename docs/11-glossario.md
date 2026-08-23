@@ -1,7 +1,5 @@
 # 11 — Glossário
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 ## Camadas de sinal

@@ -1,7 +1,5 @@
 # 05 — Ética e privacidade
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 Este projeto mede o rádio de terceiros sem que eles saibam. Isso não é um detalhe: é a
@@ -63,5 +61,5 @@ Vale fazê-lo com a postura de quem estuda uma vulnerabilidade — não de quem 
 - Anonimize a planta (não indique endereço, andar ou número do apartamento).
 - Deixe explícito no repositório que a coleta foi feita **no próprio domicílio, com
   consentimento dos moradores**.
-- Respeite as regras da empresa ao compartilhar qualquer material derivado deste estudo com
-  terceiros.
+- Ao compartilhar qualquer material derivado deste estudo, lembre que ele descreve o interior
+  de um domicílio e a vizinhança de rádio ao redor dele.

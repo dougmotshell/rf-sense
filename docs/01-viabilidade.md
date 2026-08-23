@@ -1,6 +1,6 @@
 # 01 — Viabilidade: dá para "enxergar" o ambiente com Wi-Fi?
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b> · Pesquisa: 2026-08-23</sub>
+<sub>Pesquisa: 2026-08-23</sub>
 
 ---
 

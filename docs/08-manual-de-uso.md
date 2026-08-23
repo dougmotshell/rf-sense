@@ -1,7 +1,5 @@
 # 08 — Manual de uso
 
-<sub><b>intelie</b> · Classificação ISO 27001: <b>PÚBLICO</b></sub>
-
 ---
 
 ## Requisitos
