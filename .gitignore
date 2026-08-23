@@ -1,0 +1,9 @@
+# Medições brutas: contêm identificadores de rede de terceiros. Nunca versionar.
+data/raw/
+data/processed/
+*.pcap
+*.bin
+
+__pycache__/
+*.pyc
+.venv/
