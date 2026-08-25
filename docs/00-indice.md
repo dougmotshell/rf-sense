@@ -9,6 +9,7 @@ com laptop e celular apenas, a custo zero.
 
 | Se você quer... | Leia |
 |---|---|
+| **Nunca vi este projeto. Me explica?** | **[17 — Comece aqui](17-comece-aqui.md)** |
 | Entender se isso é possível | [01 — Viabilidade](01-viabilidade.md) |
 | Saber o que fazer amanhã | [03 — Roadmap](03-roadmap.md) |
 | Rodar as ferramentas | [08 — Manual de uso](08-manual-de-uso.md) |
@@ -37,6 +38,10 @@ com laptop e celular apenas, a custo zero.
 
 ### Execução
 
+- **[17 — Comece aqui](17-comece-aqui.md)** — o manual em linguagem simples, sem
+  pressupor nada: o que o projeto faz, o que ele não faz, e um roteiro de seis passos
+  em que cada passo diz o que rodar, o que vai aparecer e como saber se deu certo.
+  **Se é a sua primeira vez, comece por este.**
 - **[03 — Roadmap](03-roadmap.md)** — as fases, cada uma com critério de sucesso verificável.
 - **[16 — Modos e POC](16-modos-e-poc.md)** — os nove modos (free a US$ 150), os cinco
   portões do POC, e **o que foi medido nesta máquina**: cadência de 0,1 Hz, degrau de

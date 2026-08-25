@@ -94,10 +94,15 @@ Ver `docs/02-hardware.md`.
 
 ## Documentação
 
+Se é a sua primeira vez aqui, o caminho é
+**[`docs/17-comece-aqui.md`](docs/17-comece-aqui.md)** — manual em linguagem simples,
+sem pressupor nada, com um roteiro de seis passos.
+
 Índice completo em **[`docs/00-indice.md`](docs/00-indice.md)**.
 
 | | |
 |---|---|
+| **[17 — Comece aqui](docs/17-comece-aqui.md)** | **o manual em linguagem simples — comece por este** |
 | [01 — Viabilidade](docs/01-viabilidade.md) | a física, o muro da fase, o que dá e o que não dá |
 | [02 — Hardware](docs/02-hardware.md) | inventário do laptop, checklist do celular |
 | [03 — Roadmap](docs/03-roadmap.md) | as fases, com critério de sucesso cada uma |
@@ -118,7 +123,7 @@ Ver `docs/02-hardware.md`.
 ## Estrutura
 
 ```
-docs/       17 documentos — ver índice acima
+docs/       18 documentos — ver índice acima
 src/        poc.py         o MVP: cinco portões e veredito
             modos.py       registro de modos free/pago e requisitos
             fontes.py      um backend de aquisição por modo
