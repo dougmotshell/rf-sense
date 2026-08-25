@@ -98,7 +98,61 @@
 - **"Rethinking RSSI for WiFi sensing"**, *npj Wireless Technology*
   <https://www.nature.com/articles/s44459-026-00053-y>
 
-## Padrão
+## Padrão e ISAC
 
-- **IEEE 802.11bf (WLAN Sensing)** — em trabalho desde 2020; define negociação de sessões de
-  sensing e troca de medições em 2,4/5/6 GHz e 60 GHz.
+- **IEEE 802.11bf-2025 (WLAN Sensing)** — **ratificado em 26/09/2025**, emenda ao 802.11-2024.
+  Define descoberta de capacidade, setup de sessão, troca e reporte de medições (amplitude,
+  fase, atraso, Doppler, ângulo) em bandas isentas abaixo de 7,125 GHz e em 60 GHz direcional.
+  Não define modelo de IA nem garante resultado. Ver [`14 §14.5`](14-as-cinco-camadas.md).
+  <https://www.ieee802.org/11/Reports/tgbf_update.htm>
+- **"IEEE 802.11bf WLAN Sensing Procedure: Enabling the Widespread Adoption of WiFi Sensing"** —
+  o artigo de referência do procedimento. <https://ieeexplore.ieee.org/document/10467185/> ·
+  [versão NIST](https://www.nist.gov/publications/ieee-80211bf-enabling-widespread-adoption-wi-fi-sensing)
+- **"Toward Integrated Sensing and Communications in IEEE 802.11bf Wi-Fi Networks"**
+  <https://arxiv.org/pdf/2212.13930>
+- **"Integrated Sensing and Communication: Towards Multifunctional Perceptive Network"** (2025) —
+  o mesmo movimento no lado celular (ISAC 5G/6G). <https://arxiv.org/pdf/2510.14358>
+- ⚠️ Rótulo "Wi-Fi 6/6E/7" **não** implica suporte a 802.11bf — exige verificar chipset e
+  firmware. Chegada estimada a roteador doméstico: 2027–2028.
+
+## O campo ampliado (ver `docs/14` e `docs/15`)
+
+- **Bilawal Sidhu, "AI Can See Without Cameras. WiFi Was Just the Beginning."** (31/07/2026) —
+  o vídeo analisado em [`14`](14-as-cinco-camadas.md). Transcrição não obtida; a análise usa
+  capítulos, descrição e as fontes citadas. <https://www.youtube.com/watch?v=olaQ3-m271M>
+- **"Radio Frequency Sensing: How AI Sees Without Cameras"** — artigo-companheiro, 🔒 paywall
+  além da prévia. <https://www.spatialintelligence.ai/p/radio-frequency-sensing-ai-without-cameras>
+- **"Your WiFi Can See You. Here's How."** (17/03/2026) — o artigo anterior do mesmo autor;
+  fonte da escada presença → pose → identidade.
+  <https://www.spatialintelligence.ai/p/your-wifi-can-see-you-heres-how>
+- **`gods-eye-view`** (MIT) — o projeto paralelo dele: 13 camadas de dados públicos num globo,
+  código inspecionável, rastreamento individual recusado por design. Precedente de forma de
+  entrega ([`15 §7`](15-viabilizar-na-pratica.md)). <https://github.com/bilawalsidhu/gods-eye-view>
+
+### Camadas 3–5: fora de alcance aqui, citados para fechar a escada
+
+- **MIT Vital-Radio** — sinais vitais por rádio, a referência do campo.
+  <https://people.csail.mit.edu/hongzi/content/publications/Vital-Radio-Zhu.pdf>
+- **Detecção de batimento através de parede com radar 24 GHz de canal único**
+  <https://pmc.ncbi.nlm.nih.gov/>
+- **"Millimeter-wave human detection and localization in complex indoor environments"**,
+  *Remote Sensing* 16(14):2572 — <https://doi.org/10.3390/rs16142572>
+- **RDGait** — identidade por marcha com radar de chip único. <https://doi.org/10.1145/3678552>
+- **"Remote Monitoring of Human Vital Signs Based on 77-GHz mm-Wave FMCW Radar"**
+  <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7285495/>
+- **"A Survey of mmWave-based Human Sensing: Technology, Platform and Applications"**
+  <https://arxiv.org/pdf/2308.03149>
+- **Google Soli / Motion Sense** (60 GHz) e **Nest Hub Sleep Sensing** — o campo em produto de
+  consumo. <https://blog.google/products-and-platforms/> ·
+  <https://support.google.com/googlehome/>
+- **Sense Through the Wall (US Army)** — a origem militar do campo.
+  <https://www.army.mil/article/32868/>
+
+### Espectro e regulação
+
+- Pixel 4 não lançado na Índia por causa dos 60 GHz do Soli (WPC não havia liberado a faixa) —
+  o caso concreto de regulação matando capacidade.
+  <https://www.gsmarena.com/google_wont_sell_the_pixel_4_in_india_because_of_the_radar_hardware_inside-news-39643.php>
+- **Ato Anatel nº 14448/2017** e alterações (nº 4776/2020, nº 423/2022, nº 14158/2025) — faixa
+  57–71 GHz não licenciada e requisitos de 24,00–24,25 GHz narrowband.
+  <https://informacoes.anatel.gov.br/legislacao/atos-de-certificacao-de-produtos/2017/1139-ato-14448>

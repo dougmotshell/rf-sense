@@ -28,8 +28,11 @@ atravessam paredes, refletem em superfícies e são absorvidas por corpos. Cada 
 interações deixa uma marca mensurável no sinal que chega até você. RF sensing é ler essa marca
 de volta e inferir o que a causou.
 
-É um campo real e ativo: o IEEE está padronizando isso como **802.11bf (WLAN Sensing)**, e
-provedores de internet já vendem detecção de presença embutida em roteadores domésticos.
+É um campo real e ativo: o IEEE **ratificou** isso como **802.11bf-2025 (WLAN Sensing)** em
+setembro de 2025, e provedores de internet já vendem detecção de presença embutida em roteadores
+domésticos — uma implantação de mais de 10 milhões de roteadores reporta ~92,6% de acurácia de
+detecção de movimento. O campo mais amplo, e o que dele se aproveita aqui, está em
+[`docs/14`](docs/14-as-cinco-camadas.md) e [`docs/15`](docs/15-viabilizar-na-pratica.md).
 
 Este projeto aplica a ideia a uma pergunta específica: **em vez de detectar pessoas, reconstruir
 a geometria do lugar** — onde estão as paredes.
@@ -108,11 +111,13 @@ Ver `docs/02-hardware.md`.
 | [11 — Glossário](docs/11-glossario.md) | RSSI, CSI, BFI, SAR, FTM, PCK... |
 | [12 — Decisões de projeto](docs/12-decisoes.md) | as escolhas estruturais e o porquê |
 | [13 — Avaliação](docs/13-avaliacao.md) | como saber, com número, se o mapa está certo |
+| [14 — As cinco camadas](docs/14-as-cinco-camadas.md) | o campo de RF sensing inteiro, e o orçamento de resolução |
+| [15 — Viabilizar na prática](docs/15-viabilizar-na-pratica.md) | as ações que saem do 14 — e o que muda no roadmap |
 
 ## Estrutura
 
 ```
-docs/       14 documentos — ver índice acima
+docs/       16 documentos — ver índice acima
 src/        groundtruth.py · simulate.py · survey.py · reconstruct.py · compare.py
 scripts/    check_capabilities.sh
 data/       ground_truth.example.json  ·  raw/ e processed/ (gitignored)

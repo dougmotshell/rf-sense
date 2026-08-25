@@ -16,6 +16,8 @@ com laptop e celular apenas, a custo zero.
 | Ver se já funciona | [10 — Validação sintética](10-validacao-sintetica.md) |
 | Saber se o SEU mapa ficou certo | [13 — Avaliação](13-avaliacao.md) |
 | Um termo desconhecido | [11 — Glossário](11-glossario.md) |
+| Entender o campo mais amplo de RF sensing | [14 — As cinco camadas](14-as-cinco-camadas.md) |
+| Saber o que mudar no projeto a partir dele | [15 — Viabilizar na prática](15-viabilizar-na-pratica.md) |
 
 ## Todos os documentos
 
@@ -27,11 +29,17 @@ com laptop e celular apenas, a custo zero.
   o que cada limitação implica, e o que um upgrade destravaria.
 - **[04 — Análise crítica das fontes](04-analise-das-fontes.md)** — RuView, WhoFi, MIT Tech
   Review: o que as manchetes prometem versus o que os trabalhos entregam.
+- **[14 — As cinco camadas do RF sensing](14-as-cinco-camadas.md)** — o campo inteiro em uma
+  escada de capacidade, o orçamento de resolução (banda vs. abertura), 802.11bf e ISAC, e por
+  que quase nada do campo ajuda diretamente aqui.
 - **[11 — Glossário](11-glossario.md)** — RSSI, CSI, BFI, SAR, FTM, PCK e os demais termos.
 
 ### Execução
 
 - **[03 — Roadmap](03-roadmap.md)** — as fases, cada uma com critério de sucesso verificável.
+- **[15 — Viabilizar na prática](15-viabilizar-na-pratica.md)** — as ações que saem do [`14`](14-as-cinco-camadas.md):
+  teste de movimento, pessoa como sonda, mapa de cobertura, entrega em camadas. Altera a ordem
+  das fases do [`03`](03-roadmap.md).
 - **[08 — Manual de uso](08-manual-de-uso.md)** — todas as ferramentas, todos os parâmetros,
   procedimento de coleta e tabela de troubleshooting.
 - **[09 — Formato dos dados](09-formato-dos-dados.md)** — schemas de entrada e saída, unidades,
@@ -78,6 +86,9 @@ com laptop e celular apenas, a custo zero.
 | 3 — Densificar com o celular | ⬜ pendente |
 | 4 — BFI em modo monitor | ⬜ pendente — requer `iw` e tráfego 802.11ac |
 | 5 — Spectral scan `ath10k` | ⬜ pendente — requer parser de `fft_sample_ath10k` |
+| 0b — Teste de movimento (camada 1) | ⬜ **proposta** — 15 min, valida a cadeia de medição ([15 §1](15-viabilizar-na-pratica.md)) |
+| 1b — Pessoa como sonda (valida APs) | ⬜ **proposta** — exige `src/probe.py` ([15 §2](15-viabilizar-na-pratica.md)) |
+| 2c — Mapa de cobertura de raios | ⬜ **proposta** — só código, sem coleta ([15 §3](15-viabilizar-na-pratica.md)) |
 
 ## Em uma frase
 
