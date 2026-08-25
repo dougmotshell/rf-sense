@@ -35,6 +35,40 @@ Quão longe, em metros, a massa do mapa está da parede real mais próxima. Trê
 **Esta é a família honesta para este projeto.** O que importa não é acertar a célula exata —
 é a mancha estar no lugar certo.
 
+## A quarta decisão: avaliar só onde há dado
+
+Acrescentada depois, e é a que mais muda o número. Detalhe em
+[`15 §3`](15-viabilizar-na-pratica.md); o resumo:
+
+```bash
+python3 src/compare.py data/processed data/ground_truth.json --tipos divisoria --cobertura
+```
+
+Sem `--cobertura`, a avaliação cobra do mapa também as células que **nenhum raio
+atravessou**. Isso não mede o sistema, mede uma impossibilidade — é o mesmo argumento
+de D15, que já excluía paredes externas, aplicado agora à cobertura.
+
+O baseline do acaso é **recalculado sob a máscara**, senão a comparação deixaria de ser
+comparação. No baseline sintético a máscara cobre 74% das células e o efeito é este:
+
+| | sem máscara | com máscara |
+|---|---|---|
+| F1 | 0,684 | **0,719** |
+| F1 do acaso | 0,198 | 0,225 |
+| ganho sobre o acaso | 3,5× | **3,2×** |
+| distância ponderada | 0,68 m | **0,57 m** |
+| distância do acaso | 1,43 m | 1,27 m |
+
+As duas leituras são verdadeiras e dizem coisas diferentes: o mapa **é** melhor onde há
+dado (0,57 m contra 0,68 m), e o ganho sobre o acaso **cai** (3,2× contra 3,5×) porque
+o recorte removeu área fácil e vazia, onde acertar era barato. Reportar só a primeira
+seria propaganda; só a segunda, autoflagelação.
+
+⚠️ **Não compare execuções diferentes pela métrica sob máscara própria.** Máscaras de
+tamanhos diferentes não são comparáveis: medir menos encolhe a máscara para o miolo
+fácil e o número sobe. Para comparar configurações existe a régua comum do
+`orcamento.py` ([D21](12-decisoes.md)).
+
 ## As três decisões metodológicas
 
 ### 1. Binarização por percentil casado

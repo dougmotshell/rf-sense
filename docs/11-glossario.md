@@ -120,3 +120,46 @@ Sem ela não há avaliação, apenas impressão. É a **fase 0** deste projeto.
 
 **Fingerprinting** — localizar comparando a assinatura de sinal medida com um mapa previamente
 coletado e rotulado. Alternativa à modelagem física; exige recoleta quando o ambiente muda.
+
+**Máscara de cobertura** — o recorte do mapa em que há dado suficiente para o resultado ser
+levado a sério: célula com pelo menos `min_raios` raios **e** diversidade angular acima de
+`min_diversidade`. Avaliar fora dela mistura falha de reconstrução com ausência de medição, e
+nenhuma métrica separa as duas depois ([`15 §3`](15-viabilizar-na-pratica.md)).
+
+**Diversidade angular** — quão espalhadas são as direções dos raios que cruzam uma célula, em
+[0, 1]. Medida no ângulo **dobrado** (2θ), porque um raio é uma reta: θ e θ+180° são a mesma
+informação. Zero significa raios paralelos, e aí a célula é indistinguível das vizinhas ao
+longo daquela direção.
+
+**Régua comum** — avaliar configurações diferentes sob a **mesma** máscara. Necessário porque,
+sob a máscara própria de cada uma, medir menos parece melhor: a máscara encolhe para a parte
+fácil do ambiente e o número sobe ([D21](12-decisoes.md)).
+
+## Operação deste projeto
+
+**Modo** — o par *(fonte de dados, camada de sinal que ela entrega)*. Fixa de uma vez a camada
+alcançável, a resolução em alcance e o que precisa existir na máquina. Nove deles, de grátis a
+US$ 150 ([`16`](16-modos-e-poc.md)).
+
+**Camada** *(de RF sensing)* — o degrau de ambição: 1 presença, 2 localização/geometria,
+3 sinais vitais, 4 pose/gesto, 5 identidade. Cada degrau exige estritamente mais informação de
+canal que o anterior, e o degrau em que o hardware para é o degrau em que o projeto para
+([`14 §14.2`](14-as-cinco-camadas.md)).
+
+**Portão** — uma checagem do `poc.py` com critério objetivo, que precisa passar antes de
+prosseguir. Seguir com um portão reprovado não elimina o problema; move ele para depois, onde
+custa mais para achar.
+
+**Cadência** — de quanto em quanto tempo o número **muda**, que não é a taxa com que se
+pergunta a ele. Neste laptop, 13 consultas por segundo devolvem um valor novo a cada 9 s
+([`16 §16.3`](16-modos-e-poc.md)).
+
+**Quantização** — o menor degrau de sinal que a cadeia distingue. Aqui 1,25 dB, contra um sinal
+de interesse de 3 a 6 dB: cabe, com pouca margem.
+
+**Oclusor** — o corpo que bloqueia um raio de propósito, para servir de referência. No modo
+`sim` é um disco que caminha; em campo é você.
+
+**ΔR** *(resolução em alcance)* — `c/(2·B)`, o menor intervalo distinguível **ao longo** do
+raio. Com RSSI de beacon `B → 0` e `ΔR → ∞`: não existe resolução em alcance nenhuma, e toda
+ela vem do cruzamento de raios ([`14 §14.4`](14-as-cinco-camadas.md)).
