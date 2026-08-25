@@ -113,7 +113,8 @@ def cruzamento_retas(p1, d1, p2, d2):
 # ------------------------------------------------------------------- gravação
 
 def gravar(a):
-    kw = dict(fonte_dev=a.fonte_dev, arquivo=a.arquivo, keep_bssid=a.keep_bssid)
+    kw = dict(fonte_dev=a.fonte_dev, arquivo=a.arquivo, keep_bssid=a.keep_bssid,
+              rescan=not getattr(a, "sem_rescan", False))
     if a.modo == "sim":
         kw.update(x=a.rx[0], y=a.rx[1], duracao=a.dur,
                   oclusor=a.caminho, atenuacao_db=a.atenuacao, ruido=a.ruido)
@@ -184,9 +185,187 @@ def gravar(a):
         print(f"     e:  python3 src/probe.py sonda {destino}")
 
 
+# --------------------------------------------------- portão 0: cadência da cadeia
+
+# O que cada camada exige de TAXA EFETIVA de amostragem. Não é opinião: sai de
+# Nyquist com folga sobre o fenômeno que se quer medir.
+EXIGENCIA_HZ = [
+    (0.05, "camada 1 com oclusor ESTÁTICO (pessoa parada na reta por ~1 min)"),
+    (1.0,  "camada 1 com pessoa ANDANDO (a travessia dura 1-3 s)"),
+    (2.0,  "camada 2 pessoa como sonda / triangulação (docs/15 §2)"),
+    (5.0,  "camada 3 respiração (0,2-0,5 Hz de fenômeno)"),
+    (10.0, "camada 3 batimento (1-2 Hz de fenômeno)"),
+]
+
+
+def medir_cadencia(a):
+    """
+    Mede a taxa EFETIVA da cadeia de medição, que não é a taxa com que se
+    pergunta a ela.
+
+    A distinção decide o que é possível: dá para consultar o nmcli a 1,6 Hz e
+    receber 1,6 vez por segundo o MESMO valor em cache. O que importa é quantas
+    vezes por segundo o número MUDA. Se a cadeia atualiza a cada 8 s, nenhuma
+    esperteza de algoritmo recupera uma pessoa que atravessou em 2 s.
+
+    Este é o portão 0 do POC, e ele roda antes de qualquer coleta.
+    """
+    kw = dict(fonte_dev=a.fonte_dev, arquivo=a.arquivo, keep_bssid=a.keep_bssid,
+              rescan=not a.sem_rescan)
+    if a.modo == "sim":
+        kw.update(x=0.0, y=0.0, duracao=a.dur)
+    try:
+        fonte = fontes.abrir(a.modo, **kw)
+    except (modos.ModoIndisponivel, RuntimeError) as e:
+        sys.exit(f"\n{e}\n")
+
+    print("=" * 72)
+    print("PORTÃO 0 — CADÊNCIA DA CADEIA DE MEDIÇÃO")
+    print("=" * 72)
+    print(f"modo {a.modo} · fonte {fonte.id}"
+          + ("" if fonte.VERIFICADO else "  [backend NÃO verificado]"))
+    if a.modo == "free":
+        print(f"rescan forçado: {'não' if a.sem_rescan else 'SIM'}"
+              f"  (survey.py força; sem forçar, lê o cache)")
+    print(f"medindo {a.dur:.0f} s...\n")
+
+    ultimo, mudancas, latencias = {}, defaultdict(int), []
+    consultas = 0
+    t0 = time.time()
+    try:
+        while time.time() - t0 < a.dur:
+            ti = time.time()
+            regs = fonte.amostrar()
+            latencias.append(time.time() - ti)
+            consultas += 1
+            for r in regs:
+                c, v = r["canal"], r["valor"]
+                if c in ultimo and v != ultimo[c]:
+                    mudancas[c] += 1
+                ultimo[c] = v
+            if not regs and getattr(fonte, "esgotada", False):
+                break
+    except KeyboardInterrupt:
+        print("  interrompido")
+    dur = time.time() - t0
+    fonte.fechar()
+
+    if not ultimo:
+        sys.exit("nenhum canal observado — a fonte não devolveu nada")
+
+    hz_consulta = consultas / max(dur, 1e-9)
+    taxas = sorted((n / dur for n in mudancas.values()), reverse=True)
+    hz_efetivo = taxas[0] if taxas else 0.0
+    hz_mediano = float(np.median(list(mudancas.values()) or [0])) / max(dur, 1e-9)
+
+    print(f"canais observados       : {len(ultimo)}")
+    print(f"consultas à fonte       : {consultas} em {dur:.1f} s "
+          f"= {hz_consulta:.2f} Hz")
+    print(f"latência por consulta   : mediana {np.median(latencias):.3f} s  "
+          f"máx {max(latencias):.3f} s")
+    print(f"canais que nunca mudaram: {len(ultimo) - len(mudancas)}/{len(ultimo)}")
+    print(f"TAXA EFETIVA (melhor canal) : {hz_efetivo:.3f} Hz")
+    print(f"TAXA EFETIVA (mediana)      : {hz_mediano:.3f} Hz")
+
+    if hz_consulta > hz_efetivo * 3 and hz_efetivo > 0:
+        print(f"\n  Consultando {hz_consulta/hz_efetivo:.0f}x mais rápido do que o dado")
+        print("  muda. As amostras extras são o MESMO valor repetido — elas inflam a")
+        print("  contagem de 'amostras por ponto' sem reduzir o ruído. A mediana de 15")
+        print("  leituras de 3 valores distintos é a mediana de 3 valores.")
+
+    print("\n-- O que esta cadência permite " + "-" * 40)
+    for limite, texto in EXIGENCIA_HZ:
+        ok = hz_efetivo >= limite
+        print(f"  [{'ok ' if ok else 'NÃO'}] >= {limite:5.2f} Hz  {texto}")
+
+    alcancado = [t for h, t in EXIGENCIA_HZ if hz_efetivo >= h]
+    print()
+    if not alcancado:
+        print("  A cadeia é lenta até para oclusor estático. Antes de coletar, veja")
+        print("  se há um caminho mais rápido:  python3 src/modos.py --detectar")
+    elif len(alcancado) == 1:
+        print("  Só o protocolo ESTÁTICO é viável neste modo: a pessoa fica PARADA")
+        print("  na reta AP-receptor por ~1 min, e se compara com um trecho vazio.")
+        print(f"    python3 src/probe.py gravar --modo {a.modo} --label vazio "
+              f"--dur 120 --out data/raw/ab-vazio.jsonl")
+        print(f"    python3 src/probe.py gravar --modo {a.modo} --label bloqueado "
+              f"--dur 120 --out data/raw/ab-bloq.jsonl")
+        print("    python3 src/probe.py movimento --ab data/raw/ab-vazio.jsonl "
+              "data/raw/ab-bloq.jsonl")
+        print("  A sonda de docs/15 §2 NÃO é viável aqui: ela precisa cronometrar")
+        print("  a queda contra uma caminhada, e isso exige >= 2 Hz.")
+    else:
+        print("  Cadência suficiente para o protocolo dinâmico (pessoa andando).")
+    return hz_efetivo
+
+
 # ------------------------------------------------------ §1 teste de movimento
 
+def analisar_ab(caminho_vazio, caminho_bloq, limiar):
+    """
+    Protocolo ESTÁTICO, para cadeias lentas: duas gravações longas, uma com a
+    reta AP-receptor livre e outra com uma pessoa parada em cima dela. Compara
+    medianas em vez de cronometrar uma queda — que é o que sobra quando a
+    cadeia atualiza mais devagar do que uma pessoa atravessa.
+    """
+    sa, ma, _ = carregar_serie(caminho_vazio)
+    sb, mb, _ = carregar_serie(caminho_bloq)
+
+    print("=" * 72)
+    print("CAMADA 1 — TESTE DE MOVIMENTO, PROTOCOLO A/B ESTÁTICO  (docs/15 §1)")
+    print("=" * 72)
+    print(f"A (livre)     : {caminho_vazio}  [{ma.get('label') or 'sem rótulo'}]")
+    print(f"B (bloqueado) : {caminho_bloq}  [{mb.get('label') or 'sem rótulo'}]")
+    if ma.get("rx_x") != mb.get("rx_x") or ma.get("rx_y") != mb.get("rx_y"):
+        print("\n  ATENÇÃO: o receptor não estava na mesma posição nas duas gravações.")
+        print("  A diferença medida abaixo inclui a mudança de geometria, e não só o corpo.")
+
+    comuns = sorted(set(sa) & set(sb))
+    if not comuns:
+        sys.exit("nenhum canal em comum entre as duas gravações")
+
+    print(f"\n{'canal':16} {'A dist':>7} {'B dist':>7} {'med A':>8} {'med B':>8} "
+          f"{'queda':>7} {'signif':>7}  reagiu")
+    print("-" * 76)
+    reagiram, avaliaveis = 0, 0
+    for c in comuns:
+        va, vb = sa[c][1], sb[c][1]
+        na, nb = len(set(va)), len(set(vb))     # valores DISTINTOS, não leituras
+        med_a, med_b = float(np.median(va)), float(np.median(vb))
+        queda = med_a - med_b
+        # dispersão combinada dos valores distintos: a régua de significância
+        disp = math.sqrt((np.std(list(set(va))) ** 2 + np.std(list(set(vb))) ** 2) / 2) or 1e-9
+        signif = queda / disp
+        confiavel = na >= 3 and nb >= 3
+        avaliaveis += confiavel
+        ok = confiavel and queda >= limiar and signif >= 1.5
+        reagiram += ok
+        marca = "SIM" if ok else ("-" if confiavel else "poucos")
+        print(f"{c[:16]:16} {na:7d} {nb:7d} {med_a:8.1f} {med_b:8.1f} "
+              f"{queda:7.2f} {signif:7.1f}  {marca}")
+
+    print("\n-- Critério " + "-" * 60)
+    print(f"  >= 3 valores DISTINTOS em cada lado, queda >= {limiar:.1f} dB, "
+          f"significância >= 1,5")
+    print(f"  canais avaliáveis: {avaliaveis}/{len(comuns)} · reagiram: {reagiram}")
+    if avaliaveis == 0:
+        print("\n  INCONCLUSIVO: nenhum canal teve 3 valores distintos. As gravações")
+        print("  foram curtas demais para a cadência desta cadeia. Meça a cadência e")
+        print("  multiplique: python3 src/probe.py cadencia --modo <modo>")
+    elif reagiram >= 1:
+        print("\n  APROVADO. A cadeia enxerga um corpo humano, no protocolo estático.")
+        print("  Camada 1 funciona. A Fase 1 pode prosseguir.")
+    else:
+        print("\n  REPROVADO. Antes de culpar a física, verifique:")
+        print("    1. a pessoa estava mesmo entre o receptor e ESTE AP?")
+        print("    2. mesma orientação do dispositivo nas duas gravações?")
+        print("    3. controle automático de potência no AP")
+        print("  Compare com o teto: python3 src/probe.py cadencia --modo sim")
+
+
 def analisar_movimento(a):
+    if a.ab:
+        return analisar_ab(a.ab[0], a.ab[1], a.limiar)
     series, meta, _ = carregar_serie(a.arquivo)
     if not series:
         sys.exit("nenhum registro na série")
@@ -463,10 +642,25 @@ def main():
     g.add_argument("--fonte-dev", default=None, help="arquivo, /dev/ttyUSB0, udp:5566, -")
     g.add_argument("--arquivo", default=None, help="para --modo replay/free-rtt/free-bfi")
     g.add_argument("--keep-bssid", action="store_true")
+    g.add_argument("--sem-rescan", action="store_true",
+                   help="[free] lê o cache em vez de forçar varredura: rápido e "
+                        "repetido. Mede a cadência antes de confiar nisso")
     g.add_argument("--out", default="data/raw/probe.jsonl")
 
+    c = sub.add_parser("cadencia", help="portão 0 — taxa EFETIVA da cadeia de medição")
+    c.add_argument("--modo", default="free")
+    c.add_argument("--dur", type=float, default=45.0)
+    c.add_argument("--sem-rescan", action="store_true",
+                   help="[free] lê o cache do NetworkManager em vez de forçar varredura")
+    c.add_argument("--fonte-dev", default=None)
+    c.add_argument("--arquivo", default=None)
+    c.add_argument("--keep-bssid", action="store_true")
+
     m = sub.add_parser("movimento", help="§1 — quais canais reagiram ao movimento")
-    m.add_argument("arquivo")
+    m.add_argument("arquivo", nargs="?", default=None)
+    m.add_argument("--ab", nargs=2, metavar=("LIVRE", "BLOQUEADO"),
+                   help="protocolo estático: duas gravações longas, para cadeias "
+                        "lentas demais para cronometrar uma travessia")
     m.add_argument("--limiar", type=float, default=LIMIAR_QUEDA_DB)
     m.add_argument("--janela", type=int, default=5, help="janela da mediana móvel")
 
@@ -487,7 +681,9 @@ def main():
     t.add_argument("--out", default="data/processed")
 
     a = p.parse_args()
-    {"gravar": gravar, "movimento": analisar_movimento,
+    if a.cmd == "movimento" and not a.arquivo and not a.ab:
+        p.error("informe o arquivo, ou --ab LIVRE BLOQUEADO")
+    {"cadencia": medir_cadencia, "gravar": gravar, "movimento": analisar_movimento,
      "sonda": analisar_sonda, "triangular": triangular}[a.cmd](a)
 
 
