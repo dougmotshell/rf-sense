@@ -42,6 +42,20 @@ python3 src/survey.py --summary data/raw/mov-bloqueado.jsonl
 e os APs em outras direções **não** perdem. Corpo humano atenua 3–6 dB em 2,4/5 GHz — número já
 citado em [`03` Fase 1](03-roadmap.md) como fonte de ruído. Aqui ele é o **sinal**.
 
+**Implementado**, com uma diferença que a medição impôs: o protocolo é **estático** (pessoa
+parada na reta por alguns minutos), porque a cadeia atualiza a ~0,1 Hz e não dá para
+cronometrar uma travessia ([`16 §16.3`](16-modos-e-poc.md)).
+
+```bash
+python3 src/probe.py cadencia --modo free                 # portão 0: mede a cadência
+python3 src/probe.py gravar --modo free --label vazio --dur 180 --out data/raw/ab-vazio.jsonl
+python3 src/probe.py gravar --modo free --label bloq  --dur 180 --out data/raw/ab-bloq.jsonl
+python3 src/probe.py movimento --ab data/raw/ab-vazio.jsonl data/raw/ab-bloq.jsonl
+```
+
+A análise conta **valores distintos**, não leituras: a mediana de 15 leituras de 3 valores
+distintos é a mediana de 3 valores, e tratá-la como 15 é enganar-se sobre o próprio ruído.
+
 **Se falhar:** o problema é a cadeia de medição, não a física. Ordem de investigação:
 (1) intervalo real de atualização do scan — forçar `nmcli device wifi rescan` entre amostras;
 (2) suavização/histerese do driver; (3) AP com controle de potência automático; (4) mediana
@@ -87,6 +101,19 @@ temporal contínua com marcação de tempo. Especificação mínima de um `src/p
 **Critério de sucesso:** o mínimo de RSSI e a marca manual caem dentro de **1 s** um do outro,
 para ≥ 3 APs. Se cair, você tem tanto validação de AP quanto — de graça — uma demonstração
 funcional de camada 1.
+
+> ⚠️ **Corrigido pela medição, 2026-08-25.** Este procedimento assumia que a cadeia de
+> medição amostrasse rápido o suficiente para cronometrar uma travessia de 1–3 s. Ela não
+> amostra: o modo `free` (`nmcli`) tem teto de **~0,1 Hz** neste laptop, medido nos dois
+> regimes ([`16 §16.3`](16-modos-e-poc.md)). A sonda exige ≥ 2 Hz, então **não é viável no
+> modo gratuito** — fica para `free-root` (spectral scan) ou `pago-csi`.
+>
+> A matemática está implementada e **validada contra a planta do simulador**, com erro de
+> 0,06 e 0,48 m contra 0,56 e 0,68 m do ajuste log-distance
+> ([`16 §16.4`](16-modos-e-poc.md)). O que falta é cadência, não código.
+>
+> No lugar dela, o modo `free` ganhou o **protocolo estático** de §1: pessoa parada na
+> reta, comparação de medianas, `probe.py movimento --ab`.
 
 **Consequência para o roadmap:** este teste deveria ser **Fase 1b**, entre survey e
 reconstrução. Ele é o único mecanismo proposto até agora que verifica um AP *individualmente*,
@@ -290,16 +317,18 @@ Duas consequências operacionais, coerentes com [`05`](05-etica-e-privacidade.md
 
 ## 10 · O que isto muda no roadmap
 
-| Item | Fase | Custo | Depende de |
+| Item | Fase | Custo | Estado |
 |---|---|---|---|
-| §1 teste de movimento | **nova 0b**, antes do survey | 15 min | nada |
-| §2 pessoa como sonda | **nova 1b**, antes da reconstrução | 1 h + `src/probe.py` | §1 passar |
-| §3 mapa de cobertura | dentro da Fase 2 | código, sem coleta | matriz `M` já existente |
-| §4 orçamento de resolução | antes da Fase 1 | só simulador | nada |
-| §6 Wi-Fi RTT | **promover** Fase 3 → antes da Fase 2 | zero | AP com FTM |
-| §7 entrega em camadas | dentro da Fase 2 | código, sem coleta | §3 |
-| §5 hardware | Fase 6 | dinheiro | decisão de relaxar custo zero |
-| §8 regulatório | só se §5 | zero | — |
+| §1 teste de movimento | **nova 0b**, antes do survey | 15 min | ✅ `probe.py movimento --ab` (protocolo estático) |
+| §2 pessoa como sonda | **nova 1b**, antes da reconstrução | 1 h | ✅ implementada e validada em `sim`; ⚠️ **fora do modo `free`** por cadência |
+| §3 mapa de cobertura | dentro da Fase 2 | código, sem coleta | ✅ `cobertura.py`, `compare.py --cobertura` |
+| §4 orçamento de resolução | antes da Fase 1 | só simulador | ✅ `orcamento.py` |
+| §6 Wi-Fi RTT | **promover** Fase 3 → antes da Fase 2 | zero | 🟡 modo `free-rtt` declarado, consumo pronto (`--aps-fixos`); export do celular por fazer |
+| §7 entrega em camadas | dentro da Fase 2 | código, sem coleta | ✅ `camadas.py` (7 camadas + manifesto) |
+| §5 hardware | Fase 6 | dinheiro | 🟡 backends escritos, **nenhum testado** ([`16 §16.1`](16-modos-e-poc.md)) |
+| §8 regulatório | só se §5 | zero | 📄 registrado |
+| §9 linha ética | permanente | zero | 📄 registrado |
+| — portões do POC | antes de tudo | 1 min | ✅ `poc.py` |
 
 **A ordem revista, e o motivo:**
 
@@ -316,3 +345,7 @@ Duas consequências operacionais, coerentes com [`05`](05-etica-e-privacidade.md
 Nenhum item novo custa dinheiro e nenhum contradiz uma decisão de
 [`12`](12-decisoes.md) — três delas (D3, D5, D15) ganham verificação empírica que antes não
 tinham.
+
+**O estado real, medido:** o projeto está **bloqueado em P4** — falta a planta da casa. Não é
+hardware, não é algoritmo e não é dinheiro; é uma tarde com trena. Rode
+`python3 src/poc.py --modo free` para ver o veredito atualizado.

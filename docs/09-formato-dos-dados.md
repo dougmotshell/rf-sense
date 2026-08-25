@@ -153,6 +153,81 @@ vidro 2–4 dB, porta de madeira 3–4 dB. São ordens de grandeza — meça se 
 
 ---
 
+## `data/raw/probe.jsonl` — série temporal do `probe.py`
+
+Superconjunto do formato de survey, com uma linha de metadados na frente.
+
+```json
+{"evento":"meta","ts":1.77e9,"modo":"free","fonte":"nmcli","verificado":true,
+ "rx_x":2.0,"rx_y":2.0,"z":1.0,"caminho":[1,1,1,5],"dur":180.0,"label":"vazio",
+ "unidade":"dBm"}
+{"ts":1.77e9,"fonte":"nmcli","canal":"a1b2c3d4e5f6","valor":-58.5,"unidade":"dBm",
+ "quality":83,"freq_mhz":2412,"chan":1,"x":2.0,"y":2.0,"z":1.0,"label":"vazio"}
+{"evento":"marca","ts":1.77e9}
+```
+
+| campo | obrigatório | significado |
+|---|---|---|
+| `canal` | ✅ | id da origem do sinal: AP hasheado, subportadora, alvo do radar |
+| `valor` | ✅ | o número, na unidade declarada |
+| `unidade` | ✅ | `dBm`, `m` ou `adim` — depende do modo |
+| `fonte` | ✅ | backend que produziu (`nmcli`, `sim`, `esp32csi`, `mmwave`, ...) |
+
+**Por que `canal`/`valor` e não `ap`/`rssi_dbm`:** um modo pago não devolve RSSI de AP.
+`pago-mmwave` devolve distância a um alvo; `pago-csi` devolve amplitude e fase por
+subportadora. Os nomes genéricos permitem que `probe.py` e o modo `replay` funcionem
+sobre qualquer fonte. O `replay` aceita os dois formatos: se achar `ap`/`rssi_dbm`,
+preenche `canal`/`valor` sozinho, então survey antigo continua legível.
+
+Campos extras por tipo de fonte: `csi_amp[]`, `csi_fase[]`, `tem_fase` (CSI);
+`alvo_x`, `alvo_y`, `vel_mps` (mmWave); `bins[]`, `noise`, `tsf` (spectral);
+`oclusor_x`, `oclusor_y`, `bloqueio_db` (sim — a resposta certa, para conferir).
+
+## `data/processed/aps_medidos.json` — APs por triangulação
+
+```json
+{
+  "meu-roteador": {"x": 1.02, "y": 4.94, "metodo": "oclusao",
+                   "n_raios": 2, "dispersao_m": 0.0}
+}
+```
+
+Consumido por `reconstruct.py --aps-fixos`. Diferente de `aps.json`, que traz posições
+**estimadas** por ajuste log-distance, aqui são posições **medidas** — a `dispersao_m`
+é a discordância mediana entre os pares de raios usados, e serve de barra de erro.
+
+O `aps.json` gerado passou a trazer também `origem`, com valor `"fixo"` ou
+`"estimado"`, para que a camada 2 do `camadas.py` distinga as duas.
+
+## `data/processed/cobertura.csv` e `diversidade.csv`
+
+Mesma forma e mesmo referencial do `mapa.csv` ([D16](12-decisoes.md)).
+
+| arquivo | unidade | significado |
+|---|---|---|
+| `cobertura.csv` | inteiro | raios que cruzam a célula |
+| `diversidade.csv` | 0–1 | dispersão dos ângulos desses raios, no ângulo dobrado |
+
+Célula é considerada **coberta** quando `cobertura >= min_raios` **e**
+`diversidade >= min_diversidade`. Os dois limiares vão gravados em `mapa_meta.json`,
+para que `compare.py --cobertura` reproduza exatamente a máscara usada.
+
+`mapa_meta.json` ganhou também `frac_coberta`, `n_aps_fixos`, e — quando `--modo` é
+passado — `modo`, `modo_verificado` e `delta_r_m`. O `modo_verificado: false` viaja com
+o dado de propósito: um mapa feito com backend não testado precisa carregar esse aviso.
+
+## `data/processed/poc.json` — veredito dos portões
+
+```json
+{"modo":"free","ts":1.77e9,"veredito":"BLOQUEADO",
+ "portoes":[{"cod":"P0","nome":"cadência da cadeia de medição","estado":"ALERTA",
+             "resumo":"0.133 Hz — só protocolo ESTÁTICO","detalhes":["..."]}]}
+```
+
+Estados: `PASSOU`, `ALERTA`, `REPROVOU`, `PULOU`. Guardar isto com data permite ver se
+a cadeia de medição mudou entre coletas — atualização de kernel, troca de AP, outro
+laptop.
+
 ## Convenções gerais
 
 - **Distâncias em metros**, **potências em dBm**, **atenuações em dB**, **densidades em dB/m**.

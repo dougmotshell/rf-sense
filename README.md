@@ -113,12 +113,19 @@ Ver `docs/02-hardware.md`.
 | [13 — Avaliação](docs/13-avaliacao.md) | como saber, com número, se o mapa está certo |
 | [14 — As cinco camadas](docs/14-as-cinco-camadas.md) | o campo de RF sensing inteiro, e o orçamento de resolução |
 | [15 — Viabilizar na prática](docs/15-viabilizar-na-pratica.md) | as ações que saem do 14 — e o que muda no roadmap |
+| [16 — Modos e POC](docs/16-modos-e-poc.md) | os nove modos free/pago, os cinco portões, e o que foi medido aqui |
 
 ## Estrutura
 
 ```
-docs/       16 documentos — ver índice acima
-src/        groundtruth.py · simulate.py · survey.py · reconstruct.py · compare.py
+docs/       17 documentos — ver índice acima
+src/        poc.py         o MVP: cinco portões e veredito
+            modos.py       registro de modos free/pago e requisitos
+            fontes.py      um backend de aquisição por modo
+            probe.py       cadência · movimento · sonda · triangulação
+            groundtruth.py simulate.py survey.py
+            reconstruct.py cobertura.py compare.py
+            orcamento.py   camadas.py
 scripts/    check_capabilities.sh
 data/       ground_truth.example.json  ·  raw/ e processed/ (gitignored)
 ```
@@ -126,6 +133,13 @@ data/       ground_truth.example.json  ·  raw/ e processed/ (gitignored)
 ## Começando
 
 ```bash
+# 0. Dá para seguir, neste hardware, hoje? Cinco portões e um veredito.
+python3 src/poc.py --modo free
+
+# 0b. Quais modos existem, e o que roda nesta máquina
+python3 src/modos.py --listar
+python3 src/modos.py --detectar
+
 # 1. O que o seu rádio permite (não altera nada no sistema)
 ./scripts/check_capabilities.sh
 
@@ -143,9 +157,19 @@ python3 src/groundtruth.py data/ground_truth.json --plan --step 1.0
 python3 src/survey.py --x 1 --y 1 --samples 15 --out data/raw/survey.jsonl
 python3 src/survey.py --summary data/raw/survey.jsonl
 
-# 5. Reconstruir e avaliar
-python3 src/reconstruct.py data/raw/survey.jsonl --grid 0.5 --n-referencia 2.6
-python3 src/compare.py data/processed data/ground_truth.json --tipos divisoria
+# 5. Reconstruir e avaliar — só nas células que têm dado que as sustente
+python3 src/reconstruct.py data/raw/survey.jsonl --grid 0.5 --n-referencia 2.6 --modo free
+python3 src/compare.py data/processed data/ground_truth.json --tipos divisoria --cobertura
+
+# 6. Entregar em camadas, cada uma com a procedência declarada
+python3 src/camadas.py --survey data/raw/survey.jsonl --tipos divisoria
+```
+
+### Antes de gastar o fim de semana medindo
+
+```bash
+python3 src/probe.py cadencia --modo free    # a cadeia é rápida o bastante para o quê?
+python3 src/orcamento.py                     # quantos pontos valem a pena, com número
 ```
 
 Ver `docs/03-roadmap.md` para a ordem de ataque.

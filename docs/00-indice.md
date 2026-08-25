@@ -18,6 +18,7 @@ com laptop e celular apenas, a custo zero.
 | Um termo desconhecido | [11 — Glossário](11-glossario.md) |
 | Entender o campo mais amplo de RF sensing | [14 — As cinco camadas](14-as-cinco-camadas.md) |
 | Saber o que mudar no projeto a partir dele | [15 — Viabilizar na prática](15-viabilizar-na-pratica.md) |
+| Saber se dá para seguir, hoje, neste hardware | [16 — Modos e POC](16-modos-e-poc.md) |
 
 ## Todos os documentos
 
@@ -37,6 +38,9 @@ com laptop e celular apenas, a custo zero.
 ### Execução
 
 - **[03 — Roadmap](03-roadmap.md)** — as fases, cada uma com critério de sucesso verificável.
+- **[16 — Modos e POC](16-modos-e-poc.md)** — os nove modos (free a US$ 150), os cinco
+  portões do POC, e **o que foi medido nesta máquina**: cadência de 0,1 Hz, degrau de
+  1,25 dB, e a correção que isso impôs a [`15 §2`](15-viabilizar-na-pratica.md).
 - **[15 — Viabilizar na prática](15-viabilizar-na-pratica.md)** — as ações que saem do [`14`](14-as-cinco-camadas.md):
   teste de movimento, pessoa como sonda, mapa de cobertura, entrega em camadas. Altera a ordem
   das fases do [`03`](03-roadmap.md).
@@ -74,6 +78,13 @@ com laptop e celular apenas, a custo zero.
 | `src/survey.py` | Coleta de RSSI georreferenciado | [08](08-manual-de-uso.md), [09](09-formato-dos-dados.md) |
 | `src/reconstruct.py` | Tomografia: localiza APs e resolve o mapa | [07](07-teoria-tomografia.md), [08](08-manual-de-uso.md) |
 | `src/compare.py` | Avalia o mapa contra o ground truth | [13](13-avaliacao.md) |
+| `src/poc.py` | **O MVP**: cinco portões e veredito | [16](16-modos-e-poc.md) |
+| `src/modos.py` | Registro de modos free/pago e requisitos | [16](16-modos-e-poc.md) |
+| `src/fontes.py` | Um backend de aquisição por modo | [16](16-modos-e-poc.md) |
+| `src/probe.py` | Cadência, teste de movimento, sonda, triangulação | [15 §1–2](15-viabilizar-na-pratica.md) |
+| `src/cobertura.py` | Onde o mapa tem direito de existir | [15 §3](15-viabilizar-na-pratica.md) |
+| `src/orcamento.py` | Quantos pontos vale a pena medir | [15 §4](15-viabilizar-na-pratica.md) |
+| `src/camadas.py` | Entrega em camadas com procedência | [15 §7](15-viabilizar-na-pratica.md) |
 
 ## Estado atual
 
@@ -86,9 +97,10 @@ com laptop e celular apenas, a custo zero.
 | 3 — Densificar com o celular | ⬜ pendente |
 | 4 — BFI em modo monitor | ⬜ pendente — requer `iw` e tráfego 802.11ac |
 | 5 — Spectral scan `ath10k` | ⬜ pendente — requer parser de `fft_sample_ath10k` |
-| 0b — Teste de movimento (camada 1) | ⬜ **proposta** — 15 min, valida a cadeia de medição ([15 §1](15-viabilizar-na-pratica.md)) |
-| 1b — Pessoa como sonda (valida APs) | ⬜ **proposta** — exige `src/probe.py` ([15 §2](15-viabilizar-na-pratica.md)) |
-| 2c — Mapa de cobertura de raios | ⬜ **proposta** — só código, sem coleta ([15 §3](15-viabilizar-na-pratica.md)) |
+| 0b — Teste de movimento (camada 1) | ✅ implementado, **protocolo estático** ([16 §16.3](16-modos-e-poc.md)) |
+| 1b — Pessoa como sonda (valida APs) | ✅ implementada, validada em `sim`; ⚠️ fora do modo `free` por cadência |
+| 2c — Mapa de cobertura de raios | ✅ implementado (`cobertura.py`, `compare.py --cobertura`) |
+| POC — os cinco portões | ✅ `poc.py`; hoje **BLOQUEADO em P4**: falta a planta da casa |
 
 ## Em uma frase
 

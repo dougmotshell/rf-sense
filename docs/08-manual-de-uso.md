@@ -18,6 +18,171 @@
 
 ---
 
+## `src/poc.py` — o MVP: dá para seguir hoje?
+
+Cinco portões em ordem, cada um com critério objetivo. Para no primeiro que reprova.
+
+```bash
+python3 src/poc.py --modo free                              # diagnostica o rádio real
+python3 src/poc.py --modo sim                               # prova a matemática
+python3 src/poc.py --so-matematica                          # pula o hardware
+python3 src/poc.py --modo free --out data/processed/poc.json # grava o veredito
+```
+
+| flag | padrão | o que faz |
+|---|---|---|
+| `--modo` | `free` | modo de aquisição — ver `src/modos.py --listar` |
+| `--dur` | 45 | segundos medindo o rádio (P0–P2) |
+| `--so-matematica` | — | pula P0–P2, roda só P3 e P4 |
+| `--min-aps` | 8 | critério da Fase 1 em P2 |
+| `--step` `--grid` `--ruido` | 1.0 · 0.5 · 2.0 | parâmetros do teste sintético de P3 |
+| `--sem-rescan` | — | `[free]` lê o cache em vez de forçar varredura |
+
+Sai com código 1 se algum portão reprovar — dá para usar em CI. Detalhe dos portões e
+o que foi medido nesta máquina: [`16`](16-modos-e-poc.md).
+
+## `src/modos.py` — o que existe, e o que roda aqui
+
+```bash
+python3 src/modos.py --listar          # os nove modos, custo, fase, ΔR, camadas
+python3 src/modos.py --gratis          # só os de custo zero
+python3 src/modos.py --detectar        # o que roda NESTA máquina agora
+python3 src/modos.py --camadas         # a escada, e quem destrava cada degrau
+python3 src/modos.py --explicar free-bfi   # requisitos de um modo, checados um a um
+```
+
+Não altera nada no sistema. `--explicar` é o que dizer quando um comando reclamar de
+modo indisponível: ele lista requisito por requisito com `ok` / `FALTA` / `?`.
+
+## `src/fontes.py` — inspecionar a fonte crua
+
+```bash
+python3 src/fontes.py --modo sim --n 3
+python3 src/fontes.py --modo pago-mmwave --fonte-dev /dev/ttyUSB0 --bruto
+python3 src/fontes.py --modo free-root --bruto
+```
+
+`--bruto` mostra bytes ou linhas **sem interpretação**. É o caminho para depurar os
+seis backends que nunca rodaram contra hardware: se o parser estiver errado, o dump
+continua certo ([`16 §16.1`](16-modos-e-poc.md)).
+
+`--fonte-dev` aceita caminho de arquivo (replay), `/dev/ttyUSB0` (pyserial),
+`udp:5566` ou `-` (stdin).
+
+## `src/probe.py` — cadência, movimento, sonda, triangulação
+
+### `cadencia` — o portão 0, e o mais importante deles
+
+```bash
+python3 src/probe.py cadencia --modo free --dur 45
+python3 src/probe.py cadencia --modo free --dur 45 --sem-rescan
+```
+
+Mede quantas vezes por segundo o número **muda**, que não é a taxa com que se pergunta
+a ele. Imprime o que aquela cadência permite, por camada. Rode isto **antes** de
+qualquer coleta: neste laptop o teto é ~0,1 Hz, e isso já elimina um protocolo inteiro
+([`16 §16.3`](16-modos-e-poc.md)).
+
+### `gravar` — série temporal de um ponto fixo
+
+```bash
+python3 src/probe.py gravar --modo free --label vazio --dur 180 --out data/raw/ab-vazio.jsonl
+python3 src/probe.py gravar --modo sim --rx 6,1 --caminho 1,1,1,5 --dur 20 --hz 20 --marcar
+```
+
+| flag | o que faz |
+|---|---|
+| `--rx x,y` | posição do receptor durante a gravação |
+| `--caminho x0,y0,x1,y1` | a reta percorrida pela pessoa (no `sim`, move o oclusor) |
+| `--dur` `--hz` | duração e taxa alvo. `--hz 0` = tão rápido quanto a fonte permitir |
+| `--marcar` | ENTER durante a gravação anota o instante do cruzamento |
+| `--atenuacao` `--ruido` | `[sim]` atenuação do corpo e ruído em dB |
+| `--sem-rescan` | `[free]` lê o cache |
+
+### `movimento` — camada 1
+
+```bash
+# protocolo estático (cadeias lentas, é o caso do modo free)
+python3 src/probe.py movimento --ab data/raw/ab-vazio.jsonl data/raw/ab-bloq.jsonl
+
+# protocolo dinâmico (>= 1 Hz)
+python3 src/probe.py movimento data/raw/probe.jsonl
+```
+
+O modo `--ab` conta **valores distintos**, não leituras, e exige ≥ 3 de cada lado. Se
+disser "INCONCLUSIVO", as gravações foram curtas para a cadência — meça a cadência e
+multiplique a duração.
+
+Ele também acusa o falso positivo do teste: se **todos** os canais caem juntos, não é
+oclusão de um raio, é ganho automático do rádio ou o corpo perto da antena.
+
+### `sonda` e `triangular` — camada 2
+
+```bash
+python3 src/probe.py sonda data/raw/probe.jsonl --aps data/processed/aps.json
+python3 src/probe.py triangular g1.jsonl g2.jsonl g3.jsonl --out data/processed
+python3 src/reconstruct.py <survey> --aps-fixos data/processed/aps_medidos.json
+```
+
+`triangular` exige ≥ 2 gravações de receptores separados por ≥ 0,5 m, com o mesmo AP
+caindo em ambas. ⚠️ Exige ≥ 2 Hz de cadência: **não funciona no modo `free`**
+([`16 §16.4`](16-modos-e-poc.md)).
+
+Os dois descartam mínimos nas **pontas do trajeto** (`--margem-borda`, 8%): ali a reta
+do AP provavelmente cruza fora do trecho percorrido, e a direção sairia errada. Se um
+canal com queda boa for descartado, caminhe um trecho que passe de fato por baixo da
+reta dele.
+
+## `scripts/selftest.sh` — autoteste, e é o `make test`
+
+```bash
+./scripts/selftest.sh      # ou: make test
+```
+
+Sete blocos, ~1 min, sem rádio e sem rede: consistência do registro de modos, fonte
+sintética, camada 1, triangulação contra posições **conhecidas**, pipeline de
+tomografia com asserção sobre o baseline de [`13`](13-avaliacao.md), camadas, régua
+comum do orçamento e códigos de saída do POC.
+
+Só o modo `sim` é exercitado, porque é o único em que a resposta é conhecida
+([D10](12-decisoes.md)). Foi ele que achou o problema do filtro de borda
+([`16 §16.4`](16-modos-e-poc.md)).
+
+## `src/cobertura.py` — onde o mapa tem direito de existir
+
+```bash
+python3 src/cobertura.py data/raw/survey.jsonl --mapa-dir data/processed
+python3 src/compare.py data/processed data/ground_truth.json --tipos divisoria --cobertura
+```
+
+Contagem de raios e diversidade angular por célula. `--min-raios` (5) e
+`--min-diversidade` (0.25) definem a máscara. O `reconstruct.py` já calcula e salva
+tudo isso; o CLI aqui serve para recalcular com outros limiares sem refazer a
+tomografia.
+
+## `src/orcamento.py` — quantos pontos valem a pena
+
+```bash
+python3 src/orcamento.py
+python3 src/orcamento.py --steps 0.5,0.75,1.0,1.5,2.0 --grids 0.5,0.75 --noise 4
+```
+
+Varre o espaçamento de coleta no simulador e diz qual é o mais barato que passa o
+critério da Fase 2. **Leia a coluna `F1@comum`, não a `F1@prop`**: sob a própria
+máscara, medir menos parece melhor, porque a máscara encolhe para o miolo fácil da
+casa ([`15 §4`](15-viabilizar-na-pratica.md)).
+
+## `src/camadas.py` — entregar em camadas
+
+```bash
+python3 src/camadas.py --survey data/raw/survey.jsonl --tipos divisoria
+```
+
+Sete camadas no referencial de `mapa_meta.json`, mais `camadas/MANIFESTO.md` com a
+procedência de cada uma. Abra `1-atenuacao.pgm` e `0-referencia.pgm` no mesmo
+visualizador e alterne; onde `3a-cobertura.pgm` está escuro, o que a camada 1 mostra é
+regularização, não medição.
+
 ## `scripts/check_capabilities.sh`
 
 Diagnóstico do que o rádio desta máquina permite. **Não altera nada no sistema** e roda sem

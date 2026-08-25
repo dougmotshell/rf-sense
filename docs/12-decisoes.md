@@ -201,3 +201,95 @@ parâmetros que geraram aquele mapa**.
 **Por quê.** Sem origem e escala, `mapa.csv` é uma matriz sem posição no mundo e não há como
 sobrepô-la ao ground truth. Sem os parâmetros, comparar duas execuções vira adivinhação — e
 comparar execuções é justamente o uso mais produtivo do `compare.py`.
+
+---
+
+### D17 · Modo como registro declarativo, não como flag solta
+
+**Decisão.** Um único registro (`src/modos.py`) declara, por modo, a camada alcançável, a
+largura de banda, se há fase, os requisitos verificáveis e o estado de verificação do
+backend. Todas as ferramentas consultam esse registro.
+
+**Por quê.** A alternativa era cada ferramenta ter suas próprias flags de hardware. Isso
+espalha a mesma pergunta — "isto funciona aqui?" — por seis lugares que discordam entre
+si. Pior: sem um lugar onde a **camada** e o **ΔR** estejam declarados, volta a confusão
+que [`01`](01-viabilidade.md) e [`04`](04-analise-das-fontes.md) existem para combater, só
+que dentro do próprio código.
+
+**Consequência.** Quando o hardware muda, muda-se uma entrada do registro, não seis
+ferramentas. E `--explicar` responde por escrito o que antes era tentativa e erro.
+
+---
+
+### D18 · Requisito de compra vence requisito ausente
+
+**Decisão.** Ao classificar um modo, um requisito do tipo `compra` tem precedência sobre
+um binário ou dispositivo faltando.
+
+**Por quê.** Dizer "falta `hackrf_transfer`" a quem não tem um HackRF é diagnóstico errado:
+sugere que um `apt install` resolve. Não se instala o caminho para fora de não possuir o
+equipamento. A precedência deliberadamente **não** é a ordem da lista de requisitos.
+
+**Consequência.** Existe um quarto estado, `incerto`, para o que software não consegue
+verificar — se o seu AP suporta FTM, se há tráfego com sounding na rede. Não é
+"disponível" nem "faltando": é **teste manual**, e o registro diz qual.
+
+---
+
+### D19 · Backend não verificado se declara, e sempre oferece o dado cru
+
+**Decisão.** Dos nove backends, seis nunca rodaram contra hardware. Cada um carrega
+`VERIFICADO = False`, avisa em tempo de execução, propaga o aviso para o `mapa_meta.json`,
+e implementa `dump_bruto()`.
+
+**Por quê.** A alternativa honesta seria não escrever esses parsers. Mas eles são o passo
+que alguém com o hardware na mão completa em minutos, e escrevê-los agora é trabalho útil
+— **desde que não finjam estar testados**. Um parser não testado que se apresenta como
+testado produz números plausíveis e errados, que é o pior resultado possível ([D12](#)).
+
+O `dump_bruto()` é a saída disso: se o parser estiver errado, o dump continua certo. É por
+ele que se depura, e é ele que torna o parser corrigível por quem tiver a placa.
+
+---
+
+### D20 · Cadência é portão, e vem antes de tudo
+
+**Decisão.** O `poc.py` mede a taxa com que o valor **muda** antes de qualquer coleta, e
+trata isso como portão bloqueante.
+
+**Por quê.** Descoberto medindo: neste laptop o modo `free` consulta o `nmcli` a 12,95 Hz e
+o valor muda a 0,113 Hz — um fator de 114. Consultar mais rápido não gera informação nova,
+só repete o cache. Sem esse portão, "15 amostras por ponto" pareceria significar 15
+medições independentes, e a mediana sobre elas pareceria mais confiável do que é.
+
+**Consequência direta.** A pessoa como sonda ([`15 §2`](15-viabilizar-na-pratica.md))
+precisa de ≥ 2 Hz e **saiu do modo gratuito** — a matemática está implementada e validada
+no simulador, e a cadência é que não existe. Em seu lugar entrou o protocolo **estático**
+de comparação A/B, que é o que 0,1 Hz permite.
+
+**Registrar isto importa** porque `docs/15` foi escrito assumindo cadência suficiente sem
+tê-la medido. A correção veio de uma medição de 45 segundos, e é exatamente o que um portão
+serve para produzir.
+
+---
+
+### D21 · Máscara de cobertura na avaliação, com régua comum entre configurações
+
+**Decisão.** `compare.py --cobertura` avalia só as células sustentadas por dados, e
+recalcula o baseline do acaso sob a mesma máscara. `orcamento.py` compara configurações
+diferentes sob uma **régua comum**, nunca sob a máscara própria de cada uma.
+
+**Por quê.** A primeira parte é [D15](#) aplicado à cobertura em vez de ao tipo de parede:
+avaliar onde nenhum raio passou mistura falha de reconstrução com ausência de medição, e
+nenhuma métrica separa as duas depois.
+
+A segunda parte corrige um erro que a primeira versão cometeu. Sob a própria máscara, o
+resultado **melhora** quando se mede menos: com poucos pontos a máscara encolhe para o
+miolo fácil da casa, as bordas difíceis saem da conta, e o número sobe. A ferramenta
+chegou a afirmar que 12 pontos empatavam com 70. É o mesmo grau de liberdade escondido que
+[D14](#) eliminou no limiar, reaparecendo na dimensão espacial.
+
+**Consequência.** Três colunas, cada uma respondendo a uma pergunta diferente — funciona
+onde há dado? qual configuração é melhor? quanto da casa você cobriu? — e aprovação
+exigindo as três. Com isso o padrão de `--step 1.0` passou a ser **derivado**: é o mais
+barato que passa, e 0,75 m custa +38 min de campo por +0% de F1.

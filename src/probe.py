@@ -44,6 +44,21 @@ import modos             # noqa: E402
 
 LIMIAR_QUEDA_DB = 3.0     # corpo humano atenua 3–6 dB (docs/03 Fase 1)
 
+# Fração do trajeto, nas duas pontas, em que um mínimo é descartado.
+#
+# Descoberto pelo autoteste: se a reta AP->receptor cruza o caminho FORA do
+# trecho percorrido, a queda mais funda cai na ponta do trajeto — não porque a
+# pessoa cruzou ali, mas porque foi o mais perto que ela chegou da reta. A
+# direção inferida daí está errada, e um AP mal triangulado é pior que um AP
+# ausente: ele desloca todos os raios dele e a tomografia espalha o erro pelo
+# mapa sem sinalizar nada (é o argumento de D2 aplicado aqui).
+#
+# Não há como distinguir "cruzou no fim do trajeto" de "cruzou depois do fim",
+# então as duas são descartadas. O custo é perder o caso legítimo em que o AP
+# está exatamente no fim do caminho; a alternativa é aceitar direções erradas
+# sem saber quais.
+MARGEM_BORDA = 0.08
+
 
 # ------------------------------------------------------------------- utilidades
 
@@ -459,6 +474,7 @@ def analisar_sonda(a):
     span = max(t_fim - t_ini, 1e-6)
 
     resultados = {}
+    descartados_borda = []
     for canal, (t, v) in sorted(series.items()):
         if len(v) < 5:
             continue
@@ -468,6 +484,9 @@ def analisar_sonda(a):
         if queda < a.limiar:
             continue
         f = (t[i_min] - t_ini) / span
+        if f < a.margem_borda or f > 1.0 - a.margem_borda:
+            descartados_borda.append((canal, f, queda))
+            continue
         p_emp = (A[0] + f * (B[0] - A[0]), A[1] + f * (B[1] - A[1]))
         d = (p_emp[0] - rx[0], p_emp[1] - rx[1])
         norma = math.hypot(*d) or 1e-9
@@ -478,9 +497,18 @@ def analisar_sonda(a):
             "rx": [rx[0], rx[1]],
         }
 
+    if descartados_borda:
+        print(f"\n{len(descartados_borda)} canal(is) descartado(s): mínimo na ponta do "
+              f"trajeto, logo a reta AP-receptor provavelmente cruza FORA do trecho "
+              f"percorrido e a direção seria errada")
+        for canal, f, q in descartados_borda:
+            print(f"    {canal[:16]:16} queda {q:5.2f} dB em t_rel {f:.2f}")
+        print("    caminhe um trecho que passe DE FATO por baixo da reta desse AP")
+
     if not resultados:
-        print(f"\nNenhum canal caiu {a.limiar:.1f} dB ou mais. Rode o teste de "
-              f"movimento primeiro:\n  python3 src/probe.py movimento {a.arquivo}")
+        print(f"\nNenhum canal utilizável. Ou nada caiu {a.limiar:.1f} dB, ou tudo caiu "
+              f"na borda. Rode o teste de movimento primeiro:\n"
+              f"  python3 src/probe.py movimento {a.arquivo}")
         return
 
     print(f"\n{'canal':16} {'queda':>7} {'t rel':>7} {'cruzou em':>16} "
@@ -548,6 +576,7 @@ def triangular(a):
     """Cada gravação dá, por canal, uma reta receptor -> ponto de oclusão.
     Duas retas de receptores diferentes se cruzam na posição real do AP."""
     raios = defaultdict(list)
+    bordas = defaultdict(int)
     for arq in a.gravacoes:
         series, meta, _ = carregar_serie(arq)
         caminho = tuple(meta["caminho"]) if meta.get("caminho") else None
@@ -567,6 +596,9 @@ def triangular(a):
             if queda < a.limiar:
                 continue
             f = (t[i_min] - t_ini) / span
+            if f < a.margem_borda or f > 1.0 - a.margem_borda:
+                bordas[canal] += 1
+                continue
             p = (A[0] + f * (B[0] - A[0]), A[1] + f * (B[1] - A[1]))
             d = (p[0] - rx[0], p[1] - rx[1])
             n = math.hypot(*d) or 1e-9
@@ -577,9 +609,13 @@ def triangular(a):
     print("TRIANGULAÇÃO DE APs A PARTIR DE OCLUSÃO  (docs/15 §2)")
     print("=" * 72)
     medidos = {}
-    for canal, rs in sorted(raios.items()):
+    for canal in sorted(set(raios) | set(bordas)):
+        rs = raios.get(canal, [])
+        nb = bordas.get(canal, 0)
         if len(rs) < 2:
-            print(f"  {canal[:16]:16} só {len(rs)} raio — precisa de 2 receptores distintos")
+            extra = f", {nb} descartado(s) na borda do trajeto" if nb else ""
+            print(f"  {canal[:16]:16} só {len(rs)} raio{extra} — precisa de 2 "
+                  f"receptores distintos")
             continue
         pontos = []
         for i in range(len(rs)):
@@ -672,12 +708,18 @@ def main():
     s.add_argument("--limiar", type=float, default=LIMIAR_QUEDA_DB)
     s.add_argument("--janela", type=int, default=5)
     s.add_argument("--tolerancia", type=float, default=1.0, help="erro aceitável em metros")
+    s.add_argument("--margem-borda", type=float, default=MARGEM_BORDA,
+                   help="descarta mínimo nas pontas do trajeto (fração). A reta do AP "
+                        "provavelmente cruza fora do trecho percorrido, e a direção "
+                        "sairia errada")
     s.add_argument("--out", default=None, help="salvar as direções em JSON")
 
     t = sub.add_parser("triangular", help="§2 — cruza gravações e mede a posição dos APs")
     t.add_argument("gravacoes", nargs="+")
     t.add_argument("--limiar", type=float, default=LIMIAR_QUEDA_DB)
     t.add_argument("--janela", type=int, default=5)
+    t.add_argument("--margem-borda", type=float, default=MARGEM_BORDA,
+                   help="descarta mínimo nas pontas do trajeto (fração)")
     t.add_argument("--out", default="data/processed")
 
     a = p.parse_args()
