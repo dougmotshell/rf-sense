@@ -1,0 +1,10 @@
+# rf-sense — dependências
+#
+# Uma só, e é deliberado: D4 e D11 decidiram implementar o solver e a saída
+# gráfica sem scipy e sem matplotlib, porque "custo zero" inclui não exigir
+# instalação. numpy é a única linha que não deu para evitar.
+numpy>=1.24
+
+# Opcional, e só para UM backend: pago-mmwave lendo de porta serial de verdade.
+# Sem isso o backend ainda funciona por replay de arquivo (ver docs/16 §16.1).
+# pyserial>=3.5
